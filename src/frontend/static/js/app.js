@@ -72,6 +72,11 @@ function updateCanvasSize(img) {
 
 function toggleCalibration() {
     isEditing = !isEditing;
+    const panel = document.getElementById("calibration-controls");
+    if (panel) {
+        if (isEditing) panel.classList.remove("d-none");
+        else panel.classList.add("d-none");
+    }
     drawOverlay();
 }
 
@@ -86,8 +91,8 @@ function drawOverlay() {
     drawLine(l2, "red", "Line 2 (End)");
     
     if (isEditing) {
-        drawHandles(l1);
-        drawHandles(l2);
+        drawHandles(l1, 1);
+        drawHandles(l2, 3);
     }
 }
 
@@ -104,17 +109,34 @@ function drawLine(line, color, label) {
     ctx.fillText(label, line[0] * scaleX, line[1] * scaleY - 10);
 }
 
-function drawHandles(line) {
+function drawHandles(line, startIndex) {
+    ctx.font = "bold 14px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Point 1
+    let x1 = line[0]*scaleX;
+    let y1 = line[1]*scaleY;
+
     ctx.fillStyle = "yellow";
     ctx.strokeStyle = "black";
-    
-    // Point 1
-    ctx.beginPath(); ctx.arc(line[0]*scaleX, line[1]*scaleY, 6, 0, 2*Math.PI); 
+    ctx.beginPath(); ctx.arc(x1, y1, 10, 0, 2*Math.PI);
     ctx.fill(); ctx.stroke();
     
+    ctx.fillStyle = "black";
+    ctx.fillText(startIndex.toString(), x1, y1);
+
     // Point 2
-    ctx.beginPath(); ctx.arc(line[2]*scaleX, line[3]*scaleY, 6, 0, 2*Math.PI); 
+    let x2 = line[2]*scaleX;
+    let y2 = line[3]*scaleY;
+
+    ctx.fillStyle = "yellow";
+    ctx.strokeStyle = "black";
+    ctx.beginPath(); ctx.arc(x2, y2, 10, 0, 2*Math.PI);
     ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = "black";
+    ctx.fillText((startIndex+1).toString(), x2, y2);
 }
 
 function getClickPos(e) {
@@ -257,15 +279,53 @@ async function saveConfig(e) {
     config.notifications.webhook.enabled = document.getElementById("conf-webhook-enabled").checked;
     config.notifications.webhook.url = document.getElementById("conf-webhook-url").value;
 
+    try {
+        await sendConfig(config);
+        alert("Configuration saved!");
+    } catch(e) {
+        alert("Failed to save configuration.");
+    }
+}
+
+// Calibration Helpers
+window.movePoint = function(dx, dy) {
+    if (!config.detection) return;
+    const sel = document.getElementById("cal-point-select").value;
+    const step = 2;
+
+    let line, idx;
+    // Values: 0->L1P1, 1->L1P2, 2->L2P1, 3->L2P2
+    if (sel === "0") { line = config.detection.line1; idx = 0; }
+    else if (sel === "1") { line = config.detection.line1; idx = 2; }
+    else if (sel === "2") { line = config.detection.line2; idx = 0; }
+    else if (sel === "3") { line = config.detection.line2; idx = 2; }
+    else return;
+
+    line[idx] += dx * step;
+    line[idx+1] += dy * step;
+
+    if (config.camera) {
+        line[idx] = Math.max(0, Math.min(line[idx], config.camera.width));
+        line[idx+1] = Math.max(0, Math.min(line[idx+1], config.camera.height));
+    }
+
+    drawOverlay();
+};
+
+window.saveCalibration = async function() {
+    try {
+        await sendConfig(config);
+        alert("Positions saved!");
+    } catch(e) {
+        alert("Failed to save: " + e);
+    }
+};
+
+async function sendConfig(cfg) {
     const res = await fetch("/api/config", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(config)
+        body: JSON.stringify(cfg)
     });
-    
-    if (res.ok) {
-        alert("Configuration saved!");
-    } else {
-        alert("Failed to save configuration.");
-    }
+    if (!res.ok) throw new Error(res.statusText);
 }
