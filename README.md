@@ -20,9 +20,13 @@ Dit project verandert je Raspberry Pi 5 met Camera Module 3 in een geavanceerde 
 
 1.  **Clone de repository:**
     ```bash
-    git clone https://github.com/jouw-gebruikersnaam/speed-cam-pi.git
-    cd speed-cam-pi
+    git clone https://github.com/lexhartman/rpi-speed-cam.git    
     ```
+    
+    ```bash
+    cd rpi-speed-cam
+    ```
+    
 
 2.  **Installeer Docker (indien nog niet aanwezig):**
     ```bash
