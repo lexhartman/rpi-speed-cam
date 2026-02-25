@@ -19,7 +19,6 @@ COPY config/raspi.pref /etc/apt/preferences.d/raspi.pref
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libcamera0 \
     libcamera-ipa \
     libcamera-tools \
     gstreamer1.0-libcamera \
