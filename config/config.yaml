@@ -1,0 +1,63 @@
+# Raspberry Pi 5 Speed Camera Configuration
+# Edit this file to customize your setup
+
+camera:
+  # Camera index (usually 0 for the first camera, but on Pi 5 could be /dev/video0)
+  device_id: 0
+  width: 1280
+  height: 720
+  fps: 30
+  # Flip the image if mounted upside down (horizontal/vertical: 0=none, 1=H, 2=V, 3=both)
+  flip: 0
+
+detection:
+  # Real distance between the two virtual lines in meters (CRITICAL for accuracy!)
+  # Example: 5 meters between line A and line B
+  real_distance_meters: 5.0
+  
+  # Pixel coordinates for the two virtual lines.
+  # Format: [x1, y1, x2, y2] (start and end points of the line)
+  # You can adjust these via the web interface visually.
+  # Line 1 (Entry/Start)
+  line1: [100, 200, 1180, 200]
+  # Line 2 (Exit/End)
+  line2: [100, 500, 1180, 500]
+  
+  # Minimum area of object (in pixels) to track (filters out small noise/leaves)
+  min_area: 5000
+  
+  # Direction filter: "both", "approaching" (top->bottom), "receding" (bottom->top)
+  direction: "both"
+
+limits:
+  # Speed limit in km/h to trigger notifications (0 = always notify, high value = disable)
+  speed_limit_kmh: 50
+  
+  # Storage management
+  # Maximum disk usage percentage (e.g., 90 means delete oldest files when disk is 90% full)
+  max_disk_usage_percent: 90
+  # Warning threshold to send notification before deletion starts
+  disk_warning_percent: 85
+
+notifications:
+  enabled: true
+  
+  telegram:
+    enabled: false
+    bot_token: "YOUR_BOT_TOKEN"
+    chat_id: "YOUR_CHAT_ID"
+    
+  pushover:
+    enabled: false
+    user_key: "YOUR_USER_KEY"
+    api_token: "YOUR_API_TOKEN"
+    
+  webhook:
+    enabled: false
+    url: "https://your-webhook-url.com"
+    method: "POST" # or GET
+
+web:
+  port: 8000
+  username: "admin"
+  password: "change_me" # Strongly recommended to change via environment variable or here

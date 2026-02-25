@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Cam Pi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/styles.css" rel="stylesheet">
+    <style>
+        .nav-link.active {
+            font-weight: bold;
+            border-bottom: 2px solid white;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Speed Cam Pi 5</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showTab('dashboard')">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showTab('history')">History</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showTab('settings')">Settings</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                     <li class="nav-item">
+                        <a class="nav-link" href="/logout">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-4">
+        <div id="alert-container"></div>
+        
+        <!-- Dashboard Tab -->
+        <div id="tab-dashboard" class="tab-content">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>Live Feed</span>
+                            <button class="btn btn-sm btn-outline-primary" onclick="toggleCalibration()">Edit Lines</button>
+                        </div>
+                        <div class="card-body p-0 position-relative" style="min-height: 480px; background: #000;">
+                            <img id="stream-img" src="/stream" style="width: 100%; height: auto; display: block;">
+                            <canvas id="overlay-canvas" style="position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">Recent Events</div>
+                        <div class="card-body" id="recent-events-list" style="max-height: 480px; overflow-y: auto;">
+                            <!-- Events injected via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="tab-history" class="tab-content d-none">
+            <h3>Event History</h3>
+            <div class="row" id="history-grid">
+                <!-- Grid of images -->
+            </div>
+            <button class="btn btn-primary mt-3" onclick="loadHistory()">Load More</button>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="tab-settings" class="tab-content d-none">
+            <h3>Configuration</h3>
+            <form id="config-form">
+                <div class="accordion" id="accordionSettings">
+                    
+                    <!-- Detection -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                Detection & Calibration
+                            </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionSettings">
+                            <div class="accordion-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Real Distance (Meters)</label>
+                                    <input type="number" step="0.1" class="form-control" id="conf-distance" required>
+                                    <div class="form-text">Distance between the two virtual lines.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Minimum Object Area</label>
+                                    <input type="number" class="form-control" id="conf-min-area">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Limits -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                Limits & Storage
+                            </button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionSettings">
+                            <div class="accordion-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Speed Limit (km/h) for Alert</label>
+                                    <input type="number" class="form-control" id="conf-speed-limit">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Max Disk Usage (%)</label>
+                                    <input type="number" class="form-control" id="conf-disk-usage">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                Notifications
+                            </button>
+                        </h2>
+                        <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionSettings">
+                            <div class="accordion-body">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="conf-notif-enabled">
+                                    <label class="form-check-label">Enable Notifications</label>
+                                </div>
+                                
+                                <h5>Telegram</h5>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="conf-telegram-enabled">
+                                    <label class="form-check-label">Enable Telegram</label>
+                                </div>
+                                <div class="mb-2">
+                                    <input type="text" class="form-control" id="conf-telegram-token" placeholder="Bot Token">
+                                </div>
+                                <div class="mb-3">
+                                    <input type="text" class="form-control" id="conf-telegram-chat" placeholder="Chat ID">
+                                </div>
+
+                                <h5>Webhook</h5>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="conf-webhook-enabled">
+                                    <label class="form-check-label">Enable Webhook</label>
+                                </div>
+                                <div class="mb-2">
+                                    <input type="text" class="form-control" id="conf-webhook-url" placeholder="URL">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success mt-3">Save Configuration</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
