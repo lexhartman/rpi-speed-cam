@@ -9,6 +9,7 @@ Dit project verandert je Raspberry Pi 5 met Camera Module 3 in een geavanceerde 
 *   **Notificaties**: Ondersteuning voor Telegram, Pushover en Webhooks (bijv. voor WhatsApp via externe diensten).
 *   **Opslagbeheer**: Automatische opschoning van oude beelden als de schijf vol raakt.
 *   **Docker**: Eenvoudige installatie en updates.
+*   **Raspberry Pi 5 Ready**: Volledige ondersteuning voor `libcamera` via GStreamer.
 
 ## Benodigdheden
 
@@ -20,13 +21,9 @@ Dit project verandert je Raspberry Pi 5 met Camera Module 3 in een geavanceerde 
 
 1.  **Clone de repository:**
     ```bash
-    git clone https://github.com/lexhartman/rpi-speed-cam.git    
-    ```
-    
-    ```bash
+    git clone https://github.com/lexhartman/rpi-speed-cam.git
     cd rpi-speed-cam
     ```
-    
 
 2.  **Installeer Docker (indien nog niet aanwezig):**
     ```bash
@@ -37,10 +34,10 @@ Dit project verandert je Raspberry Pi 5 met Camera Module 3 in een geavanceerde 
 
 3.  **Start de applicatie:**
     ```bash
-    docker compose up -d
+    docker compose up -d --build
     ```
 
-    *Let op: De eerste keer duurt het even om de container te bouwen.*
+    *Let op: De eerste keer duurt het even om de container te bouwen omdat systeem-dependencies (OpenCV, GStreamer) worden geïnstalleerd.*
 
 4.  **Open de webinterface:**
     Ga in je browser naar `http://<IP-van-je-Pi>:8000`.
@@ -68,10 +65,13 @@ Je kunt notificaties instellen in het tabblad **Settings**.
 
 ## Troubleshooting
 
-*   **Camera niet gevonden:**
-    Zorg dat de camera correct is aangesloten en werkt (`rpicam-hello` op de Pi).
-    Als je Docker gebruikt, zorg dat de container toegang heeft tot `/dev/video0`.
-    Op de Raspberry Pi 5 wordt `libcamera` gebruikt. De container gebruikt OpenCV, wat soms een compatibiliteitslaag nodig heeft. Als het beeld zwart blijft, probeer dan de camera instellingen in `config/config.yaml` aan te passen of gebruik `libcamerify` op de host als dat nodig is voor legacy apps.
+*   **Camera niet gevonden (Raspberry Pi 5):**
+    De container probeert automatisch een moderne `libcamera` verbinding te maken via GStreamer (`libcamerasrc`).
+    Zorg ervoor dat:
+    1.  Je `rpicam-hello` of `rpicam-vid` op de host kunt draaien.
+    2.  Er geen andere camera-software (zoals MotionEye) draait die de camera bezet houdt.
+    3.  Je de laatste versie van deze repository hebt (git pull) en de container opnieuw hebt gebouwd (`docker compose build --no-cache`).
+    4.  Als het nog steeds niet werkt, controleer de logs: `docker compose logs -f`.
 
 *   **Snelheid wijkt af:**
     Controleer de "Real Distance" instelling. Een kleine afwijking in meters heeft grote invloed op de berekende snelheid. Zorg ook dat de lijnen haaks op de rijrichting staan voor het beste resultaat.
@@ -81,5 +81,5 @@ Je kunt notificaties instellen in het tabblad **Settings**.
 Wil je aanpassingen maken aan de code?
 De broncode staat in de `src` map. Na aanpassingen moet je de container opnieuw bouwen:
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
