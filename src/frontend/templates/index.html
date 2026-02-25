@@ -6,6 +6,7 @@
     <title>Speed Cam Pi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/css/styles.css" rel="stylesheet">
+    <link rel="manifest" href="/static/manifest.json">
     <style>
         .nav-link.active {
             font-weight: bold;
@@ -56,6 +57,41 @@
                         <div class="card-body p-0 position-relative" style="min-height: 480px; background: #000;">
                             <img id="stream-img" src="/stream" style="width: 100%; height: auto; display: block;">
                             <canvas id="overlay-canvas" style="position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%;"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Calibration Controls -->
+                    <div id="calibration-controls" class="card mt-3 d-none">
+                        <div class="card-header bg-light">Calibration Controls</div>
+                        <div class="card-body">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-sm-4">
+                                    <label class="form-label small">Select Point</label>
+                                    <select id="cal-point-select" class="form-select">
+                                        <option value="0">1. Line 1 Start (Blue)</option>
+                                        <option value="1">2. Line 1 End (Blue)</option>
+                                        <option value="2">3. Line 2 Start (Red)</option>
+                                        <option value="3">4. Line 2 End (Red)</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-4 text-center">
+                                    <label class="form-label small d-block">Move</label>
+                                    <div class="d-inline-block">
+                                        <div class="mb-1">
+                                            <button class="btn btn-sm btn-outline-dark" onclick="movePoint(0, -1)">▲</button>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-dark" onclick="movePoint(-1, 0)">◀</button>
+                                            <button class="btn btn-sm btn-outline-dark" onclick="movePoint(0, 1)">▼</button>
+                                            <button class="btn btn-sm btn-outline-dark" onclick="movePoint(1, 0)">▶</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4 text-end">
+                                    <label class="form-label small d-block">&nbsp;</label>
+                                    <button class="btn btn-success w-100" onclick="saveCalibration()">Save Positions</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
