@@ -6,7 +6,7 @@ import os
 import subprocess
 
 class Camera:
-    def __init__(self, source=0, width=1280, height=720, fps=30):
+    def __init__(self, source=0, width=1536, height=864, fps=30):
         self.source = source
         self.width = width
         self.height = height
@@ -25,14 +25,24 @@ class Camera:
 
         # Try GStreamer pipeline for Raspberry Pi 5 (Bookworm)
         # This is the preferred method for modern libcamera stack
+        # Try specific resolution first
         gst_pipeline = (
             f"libcamerasrc ! video/x-raw, width={self.width}, height={self.height}, framerate={self.fps}/1 ! "
-            "videoconvert ! video/x-raw, format=BGR ! appsink"
+            "videoconvert ! video/x-raw, format=BGR ! appsink drop=1 sync=0"
         )
         self.logger.info(f"Attempting GStreamer pipeline: {gst_pipeline}")
         # Pass cv2.CAP_GSTREAMER explicitly
         if self._try_open(gst_pipeline, cv2.CAP_GSTREAMER):
              self.logger.info("Camera started successfully using GStreamer pipeline.")
+             return
+
+        # Fallback to auto-negotiated pipeline
+        gst_pipeline_fallback = (
+            "libcamerasrc ! videoconvert ! video/x-raw, format=BGR ! appsink drop=1 sync=0"
+        )
+        self.logger.info(f"Attempting fallback GStreamer pipeline: {gst_pipeline_fallback}")
+        if self._try_open(gst_pipeline_fallback, cv2.CAP_GSTREAMER):
+             self.logger.info("Camera started successfully using fallback GStreamer pipeline.")
              return
 
         self.logger.warning("GStreamer pipeline failed. Falling back to legacy V4L2 source...")
@@ -94,6 +104,13 @@ class Camera:
             ret, frame = cap.read()
             if ret and frame is not None and frame.size > 0:
                 self.cap = cap
+                # Update actual resolution
+                actual_w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+                actual_h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+                if actual_w > 0 and actual_h > 0:
+                    self.width = int(actual_w)
+                    self.height = int(actual_h)
+                    self.logger.info(f"Camera resolution detected: {self.width}x{self.height}")
                 return True
             else:
                 cap.release()
