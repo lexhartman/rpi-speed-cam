@@ -9,6 +9,7 @@ import uvicorn
 import os
 import logging
 import cv2
+import subprocess
 
 # Logging setup
 log_dir = "data/logs"
@@ -66,6 +67,16 @@ app.mount("/images", StaticFiles(directory="data/images"), name="images")
 
 @app.on_event("startup")
 async def startup_event():
+    # Log libcamera version for debugging
+    try:
+        libcam_ver = subprocess.check_output(
+            ["dpkg-query", "-W", "-f=${Version}", "libcamera0"],
+            text=True
+        ).strip()
+        logger.info(f"Libcamera Version: {libcam_ver}")
+    except Exception as e:
+        logger.warning(f"Could not determine libcamera version: {e}")
+
     logger.info(f"Starting Speed Camera Service... Version: {APP_VERSION}")
     # Wait a bit for camera init
     try:
