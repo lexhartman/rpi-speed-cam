@@ -46,6 +46,9 @@ app.add_middleware(
 # Service instance
 service = SpeedCameraService()
 
+# Application Version
+APP_VERSION = "1.2.0 (GStreamer)"
+
 # Mount static files
 if not os.path.exists("src/frontend/static"):
     os.makedirs("src/frontend/static")
@@ -63,7 +66,7 @@ app.mount("/images", StaticFiles(directory="data/images"), name="images")
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info("Starting Speed Camera Service...")
+    logger.info(f"Starting Speed Camera Service... Version: {APP_VERSION}")
     # Wait a bit for camera init
     try:
         service.start()
