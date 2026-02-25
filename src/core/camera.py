@@ -1,6 +1,8 @@
 import cv2
 import time
 import logging
+import glob
+import os
 
 class Camera:
     def __init__(self, source=0, width=1280, height=720, fps=30):
@@ -13,14 +15,57 @@ class Camera:
         
     def start(self):
         self.logger.info(f"Starting camera from source: {self.source}")
-        self.cap = cv2.VideoCapture(self.source)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-        self.cap.set(cv2.CAP_PROP_FPS, self.fps)
         
-        if not self.cap.isOpened():
-            self.logger.error("Failed to open camera!")
-            raise RuntimeError("Camera source could not be opened.")
+        # Try configured source first
+        if self._try_open(self.source):
+            self.logger.info(f"Camera started successfully on {self.source}")
+            return
+
+        self.logger.warning(f"Failed to open configured source {self.source}. Starting auto-discovery...")
+
+        # Find all video devices
+        devices = sorted(glob.glob('/dev/video*'))
+        if not devices:
+            self.logger.error("No video devices found in /dev/video*")
+            raise RuntimeError("No camera devices available.")
+
+        for dev in devices:
+            # Avoid re-trying the same if source was a path string
+            if str(dev) == str(self.source):
+                continue
+
+            self.logger.info(f"Trying discovered device: {dev}")
+            if self._try_open(dev):
+                self.logger.info(f"Auto-discovery successful! Using device: {dev}")
+                self.source = dev
+                return
+
+        self.logger.error("Auto-discovery failed. No working camera found.")
+        raise RuntimeError("Camera source could not be opened and auto-discovery failed.")
+
+    def _try_open(self, source):
+        try:
+            # Open source
+            cap = cv2.VideoCapture(source)
+            if not cap.isOpened():
+                return False
+
+            # Configure
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+            cap.set(cv2.CAP_PROP_FPS, self.fps)
+
+            # Read a test frame to ensure it really works
+            ret, frame = cap.read()
+            if ret and frame is not None and frame.size > 0:
+                self.cap = cap
+                return True
+            else:
+                cap.release()
+                return False
+        except Exception as e:
+            self.logger.warning(f"Error checking source {source}: {e}")
+            return False
 
     def get_frame(self):
         if self.cap is None or not self.cap.isOpened():
