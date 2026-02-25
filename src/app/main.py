@@ -11,7 +11,22 @@ import logging
 import cv2
 
 # Logging setup
-logging.basicConfig(level=logging.INFO)
+log_dir = "data/logs"
+if not os.path.exists(log_dir):
+    try:
+        os.makedirs(log_dir)
+    except Exception as e:
+        print(f"Failed to create log directory: {e}")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(os.path.join(log_dir, "app.log"))
+    ],
+    force=True
+)
 logger = logging.getLogger("App")
 
 app = FastAPI(title="Raspberry Pi Speed Camera")
