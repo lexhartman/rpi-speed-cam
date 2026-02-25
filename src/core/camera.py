@@ -3,6 +3,7 @@ import time
 import logging
 import glob
 import os
+import subprocess
 
 class Camera:
     def __init__(self, source=0, width=1280, height=720, fps=30):
@@ -16,6 +17,12 @@ class Camera:
     def start(self):
         self.logger.info(f"Starting camera from source: {self.source}")
         
+        # Check for libcamerasrc availability
+        if self._check_gstreamer_plugin("libcamerasrc"):
+             self.logger.info("GStreamer plugin 'libcamerasrc' found.")
+        else:
+             self.logger.warning("GStreamer plugin 'libcamerasrc' NOT found. Ensure gstreamer1.0-libcamera is installed.")
+
         # Try GStreamer pipeline for Raspberry Pi 5 (Bookworm)
         # This is the preferred method for modern libcamera stack
         gst_pipeline = (
@@ -56,6 +63,14 @@ class Camera:
 
         self.logger.error("Auto-discovery failed. No working camera found.")
         raise RuntimeError("Camera source could not be opened and auto-discovery failed.")
+
+    def _check_gstreamer_plugin(self, plugin_name):
+        try:
+            # check=True will raise CalledProcessError if return code is non-zero
+            subprocess.run(["gst-inspect-1.0", plugin_name], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return False
 
     def _try_open(self, source, api_preference=None):
         try:
