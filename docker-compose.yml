@@ -11,6 +11,7 @@ services:
       - ./config:/app/config
       - ./data:/app/data
       - /dev:/dev
+      - /run/udev:/run/udev:ro
     privileged: true
     environment:
       - PYTHONUNBUFFERED=1
