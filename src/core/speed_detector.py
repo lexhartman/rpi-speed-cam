@@ -148,6 +148,7 @@ class SpeedDetector:
                                 
                                 event = {
                                     "speed": round(speed_kmh, 2),
+                                    "time_diff": time_diff,
                                     "timestamp": exit_time,
                                     "object_id": object_id,
                                     "frame": frame.copy() # Save the frame of the event

@@ -4,6 +4,7 @@ import yaml
 import logging
 import cv2
 import os
+from collections import deque
 from src.core import Camera, MockCamera, SpeedDetector, StorageManager, NotificationManager
 
 class SpeedCameraService:
@@ -18,6 +19,7 @@ class SpeedCameraService:
         self.detector = None
         self.storage = None
         self.notifier = None
+        self.calibration_events = deque(maxlen=20)
         
         self.load_config()
         self.init_components()
@@ -111,6 +113,16 @@ class SpeedCameraService:
         # Save event
         path = self.storage.save_event(event)
         
+        # Add to calibration buffer
+        cal_event = {
+            "timestamp": event["timestamp"],
+            "speed": event["speed"],
+            "time_diff": event.get("time_diff", 0),
+            "object_id": event["object_id"],
+            "image_path": os.path.basename(path)
+        }
+        self.calibration_events.appendleft(cal_event)
+
         # Notify if speeding
         if limit > 0 and speed > limit:
             msg = f"Speed Violation! {speed} km/h (Limit: {limit} km/h)"

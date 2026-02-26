@@ -158,5 +158,9 @@ async def get_history(limit: int = 50, offset: int = 0, user: str = Depends(chec
     events = service.storage.get_events(limit, offset)
     return {"events": events}
 
+@app.get("/api/calibration/events")
+async def get_calibration_events(user: str = Depends(check_auth)):
+    return list(service.calibration_events)
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

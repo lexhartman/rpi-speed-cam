@@ -49,6 +49,10 @@ class TestSpeedDetector(unittest.TestCase):
         # We expect at least one event (crossing both lines)
         if len(events) > 0:
             print(f"SUCCESS: Detected event with speed {events[0]['speed']} km/h")
+            if "time_diff" not in events[0]:
+                 self.fail("time_diff missing from event payload")
+            else:
+                 print(f"SUCCESS: time_diff present: {events[0]['time_diff']}")
         else:
             print("WARNING: No events detected in synthetic test. Adjust sensitivity.")
             
