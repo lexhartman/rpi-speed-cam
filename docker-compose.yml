@@ -1,9 +1,6 @@
-version: '3.8'
-
 services:
   speedcam:
     build: .
-    image: speed-cam-pi5:latest
     container_name: speed-cam-pi5
     restart: unless-stopped
     ports:
@@ -11,8 +8,8 @@ services:
     volumes:
       - ./config:/app/config
       - ./data:/app/data
-    devices:
-      - /dev/video0:/dev/video0
-    privileged: true # Often needed for hardware access
+      - /dev:/dev
+      - /run/udev:/run/udev:ro
+    privileged: true
     environment:
       - PYTHONUNBUFFERED=1

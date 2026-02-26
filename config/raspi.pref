@@ -1,0 +1,11 @@
+Package: *
+Pin: origin archive.raspberrypi.org
+Pin-Priority: 1001
+
+Package: libcamera*
+Pin: origin archive.raspberrypi.org
+Pin-Priority: 1001
+
+Package: gstreamer1.0-libcamera
+Pin: origin archive.raspberrypi.org
+Pin-Priority: 1001

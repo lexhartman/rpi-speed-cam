@@ -9,9 +9,25 @@ import uvicorn
 import os
 import logging
 import cv2
+import subprocess
 
 # Logging setup
-logging.basicConfig(level=logging.INFO)
+log_dir = "data/logs"
+if not os.path.exists(log_dir):
+    try:
+        os.makedirs(log_dir)
+    except Exception as e:
+        print(f"Failed to create log directory: {e}")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(os.path.join(log_dir, "app.log"))
+    ],
+    force=True
+)
 logger = logging.getLogger("App")
 
 app = FastAPI(title="Raspberry Pi Speed Camera")
@@ -31,6 +47,9 @@ app.add_middleware(
 # Service instance
 service = SpeedCameraService()
 
+# Application Version
+APP_VERSION = "1.2.0 (GStreamer)"
+
 # Mount static files
 if not os.path.exists("src/frontend/static"):
     os.makedirs("src/frontend/static")
@@ -48,7 +67,17 @@ app.mount("/images", StaticFiles(directory="data/images"), name="images")
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info("Starting Speed Camera Service...")
+    # Log libcamera version for debugging
+    try:
+        libcam_ver = subprocess.check_output(
+            ["dpkg-query", "-W", "-f=${Version}", "libcamera0"],
+            text=True
+        ).strip()
+        logger.info(f"Libcamera Version: {libcam_ver}")
+    except Exception as e:
+        logger.warning(f"Could not determine libcamera version: {e}")
+
+    logger.info(f"Starting Speed Camera Service... Version: {APP_VERSION}")
     # Wait a bit for camera init
     try:
         service.start()
@@ -128,6 +157,10 @@ async def update_config(config: dict, user: str = Depends(check_auth)):
 async def get_history(limit: int = 50, offset: int = 0, user: str = Depends(check_auth)):
     events = service.storage.get_events(limit, offset)
     return {"events": events}
+
+@app.get("/api/calibration/events")
+async def get_calibration_events(user: str = Depends(check_auth)):
+    return list(service.calibration_events)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
