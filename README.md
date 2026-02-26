@@ -34,8 +34,9 @@ Dit project verandert je Raspberry Pi 5 met Camera Module 3 in een geavanceerde 
 
 3.  **Start de applicatie:**
     ```bash
-    docker compose up -d --build
+    docker compose up -d
     ```
+    *(Of `docker-compose up -d` als je een oudere versie van Docker gebruikt)*
 
     *Let op: De eerste keer duurt het even om de container te bouwen omdat systeem-dependencies (OpenCV, GStreamer) worden geïnstalleerd.*
 
