@@ -52,7 +52,7 @@
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <span>Live Feed</span>
-                            <button class="btn btn-sm btn-outline-primary" onclick="toggleCalibration()">Edit Lines</button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="toggleCalibrationPanel()">Calibration Tools</button>
                         </div>
                         <div class="card-body p-0 position-relative" style="min-height: 480px; background: #000;">
                             <img id="stream-img" src="/stream" style="width: 100%; height: auto; display: block;">
@@ -60,37 +60,94 @@
                         </div>
                     </div>
 
-                    <!-- Calibration Controls -->
-                    <div id="calibration-controls" class="card mt-3 d-none">
-                        <div class="card-header bg-light">Calibration Controls</div>
-                        <div class="card-body">
-                            <div class="row g-2 align-items-center">
-                                <div class="col-sm-4">
-                                    <label class="form-label small">Select Point</label>
-                                    <select id="cal-point-select" class="form-select">
-                                        <option value="0">1. Line 1 Start (Blue)</option>
-                                        <option value="1">2. Line 1 End (Blue)</option>
-                                        <option value="2">3. Line 2 Start (Red)</option>
-                                        <option value="3">4. Line 2 End (Red)</option>
-                                    </select>
-                                </div>
-                                <div class="col-sm-4 text-center">
-                                    <label class="form-label small d-block">Move</label>
-                                    <div class="d-inline-block">
-                                        <div class="mb-1">
-                                            <button class="btn btn-sm btn-outline-dark" onclick="movePoint(0, -1)">▲</button>
+                    <!-- Calibration Tools (Hidden by default) -->
+                    <div id="calibration-tools" class="card mt-3 d-none">
+                        <div class="card-header">
+                            <ul class="nav nav-tabs card-header-tabs">
+                                <li class="nav-item">
+                                    <a class="nav-link active" data-bs-toggle="tab" href="#cal-tab-lines" onclick="setEditMode('lines')">1. Lines</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-bs-toggle="tab" href="#cal-tab-area" onclick="setEditMode('area')">2. Object Size</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-bs-toggle="tab" href="#cal-tab-distance" onclick="setEditMode('none')">3. Distance</a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-body tab-content">
+                            <!-- Tab 1: Lines -->
+                            <div class="tab-pane fade show active" id="cal-tab-lines">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Line 1 (Start/Blue)</h6>
+                                        <div class="input-group input-group-sm mb-2">
+                                            <span class="input-group-text">P1</span>
+                                            <input type="number" id="l1-x1" class="form-control" placeholder="X" onchange="onLineInputChange()">
+                                            <input type="number" id="l1-y1" class="form-control" placeholder="Y" onchange="onLineInputChange()">
                                         </div>
-                                        <div>
-                                            <button class="btn btn-sm btn-outline-dark" onclick="movePoint(-1, 0)">◀</button>
-                                            <button class="btn btn-sm btn-outline-dark" onclick="movePoint(0, 1)">▼</button>
-                                            <button class="btn btn-sm btn-outline-dark" onclick="movePoint(1, 0)">▶</button>
+                                        <div class="input-group input-group-sm mb-2">
+                                            <span class="input-group-text">P2</span>
+                                            <input type="number" id="l1-x2" class="form-control" placeholder="X" onchange="onLineInputChange()">
+                                            <input type="number" id="l1-y2" class="form-control" placeholder="Y" onchange="onLineInputChange()">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Line 2 (End/Red)</h6>
+                                        <div class="input-group input-group-sm mb-2">
+                                            <span class="input-group-text">P1</span>
+                                            <input type="number" id="l2-x1" class="form-control" placeholder="X" onchange="onLineInputChange()">
+                                            <input type="number" id="l2-y1" class="form-control" placeholder="Y" onchange="onLineInputChange()">
+                                        </div>
+                                        <div class="input-group input-group-sm mb-2">
+                                            <span class="input-group-text">P2</span>
+                                            <input type="number" id="l2-x2" class="form-control" placeholder="X" onchange="onLineInputChange()">
+                                            <input type="number" id="l2-y2" class="form-control" placeholder="Y" onchange="onLineInputChange()">
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-sm-4 text-end">
-                                    <label class="form-label small d-block">&nbsp;</label>
-                                    <button class="btn btn-success w-100" onclick="saveCalibration()">Save Positions</button>
+                                <div class="row mt-2">
+                                    <div class="col-12 text-center">
+                                         <label class="small">Fine Tune Selected Point</label>
+                                         <select id="cal-point-select" class="form-select d-inline-block w-auto form-select-sm">
+                                            <option value="0">Line 1 Start</option>
+                                            <option value="1">Line 1 End</option>
+                                            <option value="2">Line 2 Start</option>
+                                            <option value="3">Line 2 End</option>
+                                        </select>
+                                        <div class="btn-group btn-group-lg ms-2">
+                                            <button class="btn btn-outline-secondary" onclick="movePoint(-1, 0)">◀</button>
+                                            <button class="btn btn-outline-secondary" onclick="movePoint(0, -1)">▲</button>
+                                            <button class="btn btn-outline-secondary" onclick="movePoint(0, 1)">▼</button>
+                                            <button class="btn btn-outline-secondary" onclick="movePoint(1, 0)">▶</button>
+                                        </div>
+                                    </div>
                                 </div>
+                                <button class="btn btn-primary w-100 mt-3" onclick="saveCalibration()">Save Lines</button>
+                            </div>
+
+                            <!-- Tab 2: Area -->
+                            <div class="tab-pane fade" id="cal-tab-area">
+                                <p>Draw a box around a typical vehicle to set the minimum detection size.</p>
+                                <button class="btn btn-warning w-100" onclick="setEditMode('area'); alert('Draw a box on the video now.');">Start Drawing</button>
+                            </div>
+
+                            <!-- Tab 3: Distance -->
+                            <div class="tab-pane fade" id="cal-tab-distance">
+                                <p>Drive past the camera at a known constant speed to calibrate.</p>
+                                <button class="btn btn-secondary w-100 mb-2" onclick="fetchCalibrationEvents()">1. Fetch Recent Passages</button>
+
+                                <div id="cal-events-list" class="list-group mb-2" style="max-height: 200px; overflow-y: auto;">
+                                    <!-- Events -->
+                                </div>
+
+                                <label class="form-label">Selected Duration (s)</label>
+                                <input type="text" id="cal-selected-duration" class="form-control mb-2" readonly>
+
+                                <label class="form-label">Real Speed (km/h)</label>
+                                <input type="number" id="cal-real-speed" class="form-control mb-2" placeholder="e.g. 30">
+
+                                <button class="btn btn-success w-100" onclick="calculateCalibration()">2. Calculate & Save Distance</button>
                             </div>
                         </div>
                     </div>
