@@ -38,7 +38,8 @@ class StorageManager:
         filename = f"{dt.strftime('%Y-%m-%d_%H-%M-%S')}_{int(event['speed'])}kmh.jpg"
         filepath = os.path.join(self.images_dir, filename)
         
-        cv2.imwrite(filepath, event["frame"])
+        # Save image with maximum JPEG quality to reduce compression artifacts
+        cv2.imwrite(filepath, event["frame"], [int(cv2.IMWRITE_JPEG_QUALITY), 100])
         
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()

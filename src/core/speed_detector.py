@@ -84,11 +84,12 @@ class SpeedDetector:
         self.line2 = self.config.get("line2", [0, 0, 0, 0])
         self.real_distance = self.config.get("real_distance_meters", 5.0)
         self.min_area = self.config.get("min_area", 5000)
+        self.direction = self.config.get("direction", "both")
         
         self.fgbg = cv2.createBackgroundSubtractorMOG2(history=500, varThreshold=50, detectShadows=True)
         self.tracker = CentroidTracker(max_disappeared=40)
         
-        # Track entry/exit times: {object_id: {"entry": timestamp, "exit": timestamp, "speed": speed, "start_pos": (x,y)}}
+        # Track entry/exit times: {object_id: {"entry": timestamp, "exit": timestamp, "speed": speed, "start_line": 1 or 2}}
         self.tracked_data = {} 
         self.previous_centroids = {} # Store previous positions for line crossing logic
 
@@ -97,6 +98,7 @@ class SpeedDetector:
         self.line2 = config.get("line2", self.line2)
         self.real_distance = config.get("real_distance_meters", self.real_distance)
         self.min_area = config.get("min_area", self.min_area)
+        self.direction = config.get("direction", self.direction)
 
     def process_frame(self, frame):
         if frame is None:
@@ -125,36 +127,27 @@ class SpeedDetector:
             prev_centroid = self.previous_centroids.get(object_id)
             
             if prev_centroid is not None:
-                # Check crossing Line 1 (Entry)
-                if self.check_line_crossing(prev_centroid, centroid, self.line1):
-                    if object_id not in self.tracked_data:
-                        self.tracked_data[object_id] = {"entry": time.time(), "exit": None, "speed": None}
-                        # print(f"Object {object_id} crossed Line 1 at {self.tracked_data[object_id]['entry']}")
+                crossed_l1 = self.check_line_crossing(prev_centroid, centroid, self.line1)
+                crossed_l2 = self.check_line_crossing(prev_centroid, centroid, self.line2)
 
-                # Check crossing Line 2 (Exit)
-                if self.check_line_crossing(prev_centroid, centroid, self.line2):
-                    if object_id in self.tracked_data and self.tracked_data[object_id]["entry"] is not None:
-                         if self.tracked_data[object_id]["exit"] is None:
-                            exit_time = time.time()
-                            entry_time = self.tracked_data[object_id]["entry"]
-                            time_diff = exit_time - entry_time
-                            
-                            if time_diff > 0.1: # Min time threshold
-                                speed_mps = self.real_distance / time_diff
-                                speed_kmh = speed_mps * 3.6
-                                
-                                self.tracked_data[object_id]["exit"] = exit_time
-                                self.tracked_data[object_id]["speed"] = speed_kmh
-                                
-                                event = {
-                                    "speed": round(speed_kmh, 2),
-                                    "time_diff": time_diff,
-                                    "timestamp": exit_time,
-                                    "object_id": object_id,
-                                    "frame": frame.copy() # Save the frame of the event
-                                }
-                                new_events.append(event)
-                                # print(f"Object {object_id} Speed: {speed_kmh} km/h")
+                if crossed_l1 and crossed_l2:
+                    # Rare edge case: crossed both lines in 1 frame, ignore
+                    pass
+                elif crossed_l1:
+                    if object_id not in self.tracked_data:
+                        if self.direction in ["both", "approaching"]:
+                            self.tracked_data[object_id] = {"entry": time.time(), "exit": None, "speed": None, "start_line": 1}
+                    elif self.tracked_data[object_id].get("start_line") == 2 and self.tracked_data[object_id]["exit"] is None:
+                        # Entered L2, now crossing L1 -> Exit
+                        self._record_exit(object_id, frame, new_events)
+
+                elif crossed_l2:
+                    if object_id not in self.tracked_data:
+                        if self.direction in ["both", "receding"]:
+                            self.tracked_data[object_id] = {"entry": time.time(), "exit": None, "speed": None, "start_line": 2}
+                    elif self.tracked_data[object_id].get("start_line") == 1 and self.tracked_data[object_id]["exit"] is None:
+                        # Entered L1, now crossing L2 -> Exit
+                        self._record_exit(object_id, frame, new_events)
 
             # Draw centroid
             cv2.circle(frame, (centroid[0], centroid[1]), 4, (0, 0, 255), -1)
@@ -175,6 +168,27 @@ class SpeedDetector:
         cv2.line(frame, (int(self.line2[0]), int(self.line2[1])), (int(self.line2[2]), int(self.line2[3])), (0, 0, 255), 2)
         
         return frame, new_events
+
+    def _record_exit(self, object_id, frame, new_events):
+        exit_time = time.time()
+        entry_time = self.tracked_data[object_id]["entry"]
+        time_diff = exit_time - entry_time
+
+        if time_diff > 0.1: # Min time threshold
+            speed_mps = self.real_distance / time_diff
+            speed_kmh = speed_mps * 3.6
+
+            self.tracked_data[object_id]["exit"] = exit_time
+            self.tracked_data[object_id]["speed"] = speed_kmh
+
+            event = {
+                "speed": round(speed_kmh, 2),
+                "time_diff": time_diff,
+                "timestamp": exit_time,
+                "object_id": object_id,
+                "frame": frame.copy() # Save the frame of the event
+            }
+            new_events.append(event)
 
     def check_line_crossing(self, p1, p2, line):
         # line: [x1, y1, x2, y2]

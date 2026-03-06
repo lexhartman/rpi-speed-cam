@@ -15,6 +15,7 @@ class TestCameraPipeline(unittest.TestCase):
         mock_cap = MagicMock()
         mock_cap.isOpened.return_value = True
         mock_cap.read.return_value = (True, MagicMock(size=100))
+        mock_cap.get.return_value = 100
         mock_video_capture.return_value = mock_cap
 
         # Action
@@ -22,7 +23,7 @@ class TestCameraPipeline(unittest.TestCase):
 
         # Assert
         expected_pipeline = (
-            "libcamerasrc ! video/x-raw, width=1536, height=864, framerate=30/1 ! "
+            "libcamerasrc ! video/x-raw, width=1536, height=864, framerate=60/1 ! "
             "videoconvert ! video/x-raw, format=BGR ! appsink drop=1 sync=0"
         )
         mock_video_capture.assert_called_with(expected_pipeline, cv2.CAP_GSTREAMER)
@@ -41,6 +42,7 @@ class TestCameraPipeline(unittest.TestCase):
         mock_cap_success = MagicMock()
         mock_cap_success.isOpened.return_value = True
         mock_cap_success.read.return_value = (True, MagicMock(size=100))
+        mock_cap_success.get.return_value = 100
 
         # side_effect for multiple calls
         mock_video_capture.side_effect = [mock_cap_fail, mock_cap_success]
@@ -50,7 +52,7 @@ class TestCameraPipeline(unittest.TestCase):
 
         # Assert
         expected_pipeline_primary = (
-            "libcamerasrc ! video/x-raw, width=1536, height=864, framerate=30/1 ! "
+            "libcamerasrc ! video/x-raw, width=1536, height=864, framerate=60/1 ! "
             "videoconvert ! video/x-raw, format=BGR ! appsink drop=1 sync=0"
         )
         expected_pipeline_fallback = (

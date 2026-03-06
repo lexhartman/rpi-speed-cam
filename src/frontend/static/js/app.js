@@ -93,9 +93,24 @@ function drawOverlay() {
     
     const l1 = config.detection.line1;
     const l2 = config.detection.line2;
+    const direction = config.detection.direction || "both";
     
-    drawLine(l1, "blue", "Line 1 (Start)");
-    drawLine(l2, "red", "Line 2 (End)");
+    let l1Label = "Line 1";
+    let l2Label = "Line 2";
+
+    if (direction === "approaching") {
+        l1Label = "START LINE";
+        l2Label = "FINISH LINE";
+    } else if (direction === "receding") {
+        l1Label = "FINISH LINE";
+        l2Label = "START LINE";
+    } else {
+        l1Label = "Line 1 (Both Ways)";
+        l2Label = "Line 2 (Both Ways)";
+    }
+
+    drawLine(l1, "blue", l1Label);
+    drawLine(l2, "red", l2Label);
     
     if (editMode === 'lines') {
         drawHandles(l1, 1);
@@ -292,8 +307,35 @@ function onMouseUp() {
 }
 
 // Helpers
+window.updateCalibrationLabels = function() {
+    const dir = document.getElementById("conf-direction");
+    const val = dir ? dir.value : (config.detection?.direction || "both");
+
+    const l1El = document.getElementById("cal-label-l1");
+    const l2El = document.getElementById("cal-label-l2");
+
+    if (l1El && l2El) {
+        if (val === "approaching") {
+            l1El.innerText = "START LINE (Blue)";
+            l2El.innerText = "FINISH LINE (Red)";
+        } else if (val === "receding") {
+            l1El.innerText = "FINISH LINE (Blue)";
+            l2El.innerText = "START LINE (Red)";
+        } else {
+            l1El.innerText = "Line 1 (Start/End - Blue)";
+            l2El.innerText = "Line 2 (Start/End - Red)";
+        }
+    }
+
+    if (config.detection) {
+        config.detection.direction = val;
+        drawOverlay();
+    }
+}
+
 function updateLineInputs() {
     if (!config.detection) return;
+    updateCalibrationLabels();
     const set = (id, val) => {
         const el = document.getElementById(id);
         if(el) el.value = Math.round(val);
@@ -351,6 +393,7 @@ function populateConfigForm() {
 
     if(!config.detection) return;
 
+    set("conf-direction", config.detection.direction || "both");
     set("conf-distance", config.detection.real_distance_meters);
     set("conf-min-area", config.detection.min_area);
     set("conf-speed-limit", config.limits.speed_limit_kmh);
@@ -370,6 +413,7 @@ function populateConfigForm() {
 async function saveConfig(e) {
     if(e && e.preventDefault) e.preventDefault();
     
+    config.detection.direction = document.getElementById("conf-direction").value;
     config.detection.real_distance_meters = parseFloat(document.getElementById("conf-distance").value);
     config.detection.min_area = parseInt(document.getElementById("conf-min-area").value);
     config.limits.speed_limit_kmh = parseInt(document.getElementById("conf-speed-limit").value);

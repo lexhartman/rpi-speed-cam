@@ -25,9 +25,11 @@ class Camera:
 
         # Try GStreamer pipeline for Raspberry Pi 5 (Bookworm)
         # This is the preferred method for modern libcamera stack
-        # Try specific resolution first
+        # Use 60fps and try to force a shorter exposure to reduce motion blur in daylight
+        # Note: We must stick to 1536x864 resolution for Pi 5 Camera Module 3 to prevent errors
+        fps_target = 60 if self.fps < 60 else self.fps
         gst_pipeline = (
-            f"libcamerasrc ! video/x-raw, width={self.width}, height={self.height}, framerate={self.fps}/1 ! "
+            f"libcamerasrc ! video/x-raw, width={self.width}, height={self.height}, framerate={fps_target}/1 ! "
             "videoconvert ! video/x-raw, format=BGR ! appsink drop=1 sync=0"
         )
         self.logger.info(f"Attempting GStreamer pipeline: {gst_pipeline}")
